@@ -206,9 +206,13 @@ function tryDash() {
 /* ---------- spawning ---------- */
 function spawnPipe() {
   const cfg = G.cfg;
-  const buffSlow = G.buffs.slow_mo ? 0 : 0;
   const margin = 70, gap = cfg.gap;
-  const gy = rand(margin + gap/2, H - 90 - margin - gap/2);
+  const minGy = margin + gap/2, maxGy = H - 90 - margin - gap/2;
+  let gy = rand(minGy, maxGy);
+  // keep the gap center within reach of the previous pipe so the path is
+  // always flyable, never a sudden top-to-bottom jump
+  const prev = G.pipes[G.pipes.length-1];
+  if (prev) gy = clamp(gy, clamp(prev.baseY - 150, minGy, maxGy), clamp(prev.baseY + 150, minGy, maxGy));
   const moving = (G.score >= cfg.moving);
   const pipe = {
     x: G.spawnX, gapY: gy, gap, w: 64,
@@ -294,11 +298,13 @@ function updatePlaying(dt) {
   if (b.y + rad > H - 90) { b.y = H - 90 - rad; return die(); }
   if (b.y - rad < 0) { b.y = rad; b.vy = 0; }
 
-  // spawn pipes by distance
+  // spawn pipes at a fixed horizontal spacing (so there's always a clear,
+  // navigable gap between consecutive pipes — never a continuous wall)
   G.distance += sp;
-  if (G.pipes.length === 0 || (W + 200 - G.pipes[G.pipes.length-1].x) > 200) {
-    G.spawnX = W + 60; spawnPipe();
-  }
+  const SPACING = 240;                         // px between pipe centers
+  const lastPipe = G.pipes[G.pipes.length-1];
+  if (!lastPipe) { G.spawnX = W + 60; spawnPipe(); }
+  else if (lastPipe.x <= W - SPACING + 60) { G.spawnX = lastPipe.x + SPACING; spawnPipe(); }
 
   // pipes
   for (const p of G.pipes) {
