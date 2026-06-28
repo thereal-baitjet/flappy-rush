@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#0b1026" />
 <title>Flappy Rush</title>
+<!-- Open Graph / Facebook link preview -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Flappy Rush" />
+<meta property="og:title" content="Flappy Rush — by Santos Automation" />
+<meta property="og:description" content="A juiced-up Flappy Bird clone with skins, combos, power-ups, and shareable score cards. Can you beat my score?" />
+<meta property="og:url" content="https://flappy-rush.vercel.app/" />
+<meta property="og:image" content="https://flappy-rush.vercel.app/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Flappy Rush — by Santos Automation" />
+<meta name="twitter:description" content="Tap to fly. Skins, combos, power-ups, shareable score cards. Can you beat my score?" />
+<meta name="twitter:image" content="https://flappy-rush.vercel.app/og-image.png" />
 <style>
   :root { --accent:#ffd23f; --accent2:#ff7b00; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
@@ -117,6 +130,9 @@
         <img id="cardImg" class="scorecard" alt="score card"/>
         <div class="row" style="margin-top:12px">
           <button id="btnRetry">↻ Retry</button>
+        </div>
+        <div class="row">
+          <button class="ghost" id="btnFb" style="background:#1877f2;color:#fff;border:none">📘 Share to Facebook</button>
         </div>
         <div class="row">
           <button class="ghost" id="btnShare">⬇️ Save Card</button>
