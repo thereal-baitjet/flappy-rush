@@ -698,8 +698,11 @@ function renderScoreCard() {
   x.fillStyle='#ff8c1a'; x.beginPath(); x.moveTo(14,-1); x.lineTo(24,2); x.lineTo(14,5); x.fill();
   x.restore();
   x.fillStyle='rgba(255,255,255,.4)'; x.font='bold 16px sans-serif';
-  x.fillText('Best: '+(State.scores[0]?State.scores[0].score:G.score)+'  •  '+todayKey(), 300, 660);
-  x.fillStyle='#ffd23f'; x.font='900 30px sans-serif'; x.fillText('Can you beat me?', 300, 720);
+  x.fillText('Best: '+(State.scores[0]?State.scores[0].score:G.score)+'  •  '+todayKey(), 300, 655);
+  x.fillStyle='#ffd23f'; x.font='900 30px sans-serif'; x.fillText('Can you beat me?', 300, 705);
+  // play link
+  x.fillStyle='#fff'; x.font='bold 26px sans-serif'; x.fillText('▶ Play at', 300, 748);
+  x.fillStyle='#ffd23f'; x.font='900 30px sans-serif'; x.fillText('flappy-rush.vercel.app', 300, 778);
   cardURL = c.toDataURL('image/png');
   document.getElementById('cardImg').src = cardURL;
 }
