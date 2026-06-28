@@ -54,7 +54,11 @@
   #daily { font-size:12px; opacity:.85; margin-top:6px; padding:8px 12px; background:rgba(255,210,63,.12); border:1px solid rgba(255,210,63,.3); border-radius:10px; }
   .scorecard { border-radius:14px; max-width:300px; width:80%; box-shadow:0 8px 30px rgba(0,0,0,.6); }
   .credit { position:absolute; bottom:8px; left:0; right:0; text-align:center; font-size:10px; opacity:.4; letter-spacing:1px; }
-  .initials { display:flex; gap:10px; justify-content:center; margin:10px 0; }
+  .initialswrap { position:relative; }
+  /* invisible but focusable input layered over the boxes — summons the mobile keyboard */
+  #hsInput { position:absolute; inset:0; width:100%; height:100%; opacity:0; border:0; background:transparent;
+    color:transparent; font-size:16px; /* >=16px avoids iOS zoom */ text-align:center; cursor:pointer; }
+  .initials { display:flex; gap:10px; justify-content:center; margin:10px 0; pointer-events:none; }
   .initials .c { width:54px; height:64px; border:2px solid var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center;
     font-size:34px; font-weight:900; background:rgba(255,210,63,.1); }
   .initials .c.sel { box-shadow:0 0 0 3px rgba(255,210,63,.5); }
@@ -125,8 +129,13 @@
     <div id="hs" class="overlay">
       <div class="label">New High Score!</div>
       <div class="big" id="hsScore">0</div>
-      <div class="sub">Enter your initials</div>
-      <div class="initials" id="initials"></div>
+      <div class="sub">Tap the boxes and type your initials</div>
+      <div class="initialswrap">
+        <div class="initials" id="initials"></div>
+        <input id="hsInput" type="text" maxlength="3" inputmode="text"
+               autocomplete="off" autocorrect="off" autocapitalize="characters"
+               spellcheck="false" aria-label="Enter your initials" />
+      </div>
       <div class="row">
         <button class="ghost" id="hsDel">⌫</button>
         <button id="hsOk">OK</button>

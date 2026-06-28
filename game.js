@@ -849,27 +849,35 @@ function downloadCard() {
 
 /* ---- High-score initials entry (arcade style) ---- */
 let initials = ['A','A','A'], selIdx = 0;
+const hsInput = $('hsInput');
 function promptInitials() {
   initials = ['A','A','A']; selIdx = 0;
   $('hsScore').textContent = G.score;
+  hsInput.value = '';
   renderInitials(); showOverlay('hs');
+  // focus after the overlay is visible so phones raise the keyboard
+  setTimeout(() => { try { hsInput.focus(); } catch {} }, 80);
 }
 function renderInitials() {
-  $('initials').innerHTML = initials.map((c,i)=>`<div class="c${i===selIdx?' sel':''}" data-i="${i}">${c}</div>`).join('');
-  document.querySelectorAll('#initials .c').forEach(el => {
-    el.onclick = () => { selIdx = +el.dataset.i; renderInitials(); };
-  });
+  $('initials').innerHTML = initials.map((c,i)=>`<div class="c${i===selIdx?' sel':''}">${c}</div>`).join('');
 }
+function syncFromInput() {
+  const v = hsInput.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,3);
+  if (hsInput.value !== v) hsInput.value = v;
+  initials = [v[0]||'A', v[1]||'A', v[2]||'A'];
+  selIdx = Math.min(2, v.length);   // highlight the next box to fill
+  renderInitials();
+}
+hsInput.addEventListener('input', syncFromInput);
+// tapping the boxes (or anywhere in the wrap) re-opens the mobile keyboard
+$('initials').parentElement.addEventListener('pointerdown', (e) => { e.preventDefault(); hsInput.focus(); });
+// keep Enter-to-submit for physical keyboards (letters/backspace handled natively by the input)
 window.addEventListener('keydown', (e) => {
   if (!$('hs').classList.contains('show')) return;
-  if (/^[a-zA-Z]$/.test(e.key)) { initials[selIdx] = e.key.toUpperCase(); selIdx = Math.min(2, selIdx+1); renderInitials(); }
-  else if (e.key === 'Backspace') { initials[selIdx] = 'A'; selIdx = Math.max(0, selIdx-1); renderInitials(); }
-  else if (e.key === 'ArrowUp') { initials[selIdx] = String.fromCharCode((initials[selIdx].charCodeAt(0)-65+1)%26+65); renderInitials(); }
-  else if (e.key === 'ArrowDown') { initials[selIdx] = String.fromCharCode((initials[selIdx].charCodeAt(0)-65+25)%26+65); renderInitials(); }
-  else if (e.key === 'Enter') { $('hsOk').click(); }
+  if (e.key === 'Enter') { e.preventDefault(); $('hsOk').click(); }
 });
-$('hsDel').onclick = () => { initials[selIdx] = 'A'; selIdx = Math.max(0, selIdx-1); renderInitials(); };
-$('hsOk').onclick = () => { commitScore(initials.join('')); showGameOver(); };
+$('hsDel').onclick = () => { hsInput.value = hsInput.value.slice(0, -1); syncFromInput(); hsInput.focus(); };
+$('hsOk').onclick = () => { hsInput.blur(); commitScore(initials.join('')); showGameOver(); };
 
 /* ---------- boot ---------- */
 refreshMenu();
