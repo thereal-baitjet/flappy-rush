@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0b1026" />
+<title>Flappy Rush</title>
+<style>
+  :root { --accent:#ffd23f; --accent2:#ff7b00; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html,body { margin:0; height:100%; background:#05070f; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:#fff; }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; touch-action:none; }
+  #stage { position:relative; height:100%; aspect-ratio:9/16; max-width:100%; box-shadow:0 0 60px rgba(0,0,0,.6); }
+  canvas { display:block; width:100%; height:100%; background:#0b1026; }
+  .overlay { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+    padding:6% 7%; text-align:center; background:rgba(7,10,24,.78); backdrop-filter:blur(3px); }
+  .overlay.show { display:flex; }
+  h1 { font-size:clamp(34px,9vw,72px); margin:.1em 0; letter-spacing:2px;
+    background:linear-gradient(180deg,#fff,var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 4px 0 rgba(255,123,0,.25); font-weight:900; }
+  .sub { opacity:.8; margin-bottom:18px; font-size:clamp(12px,3.2vw,16px); }
+  button { font-family:inherit; font-weight:800; cursor:pointer; border:none; border-radius:14px; color:#1a1206;
+    background:linear-gradient(180deg,var(--accent),var(--accent2)); padding:14px 22px; font-size:clamp(15px,4vw,19px);
+    margin:6px 0; min-width:200px; box-shadow:0 6px 0 #a04e00, 0 8px 16px rgba(0,0,0,.4); transition:transform .06s, box-shadow .06s; }
+  button:active { transform:translateY(4px); box-shadow:0 2px 0 #a04e00, 0 3px 8px rgba(0,0,0,.4); }
+  button.ghost { background:rgba(255,255,255,.08); color:#fff; box-shadow:none; border:1px solid rgba(255,255,255,.18); min-width:0; padding:10px 16px; font-size:14px; }
+  button.ghost:active { transform:translateY(2px); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .seg { display:flex; gap:6px; margin:4px 0 10px; }
+  .seg button { min-width:0; padding:9px 14px; font-size:13px; background:rgba(255,255,255,.08); color:#fff; box-shadow:none; border:1px solid rgba(255,255,255,.15); }
+  .seg button.active { background:linear-gradient(180deg,var(--accent),var(--accent2)); color:#1a1206; border:none; }
+  .label { font-size:12px; text-transform:uppercase; letter-spacing:2px; opacity:.6; margin-top:8px; }
+  .panel { width:100%; max-width:380px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:14px; margin:8px 0; }
+  .coinbar { display:flex; align-items:center; gap:6px; justify-content:center; font-weight:800; font-size:18px; }
+  .skingrid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .skincard { background:rgba(255,255,255,.05); border:2px solid rgba(255,255,255,.12); border-radius:12px; padding:8px 4px; cursor:pointer; transition:.1s; }
+  .skincard.equipped { border-color:var(--accent); box-shadow:0 0 0 2px rgba(255,210,63,.3); }
+  .skincard.locked { opacity:.65; }
+  .skincard canvas { width:48px; height:48px; background:transparent; margin:0 auto; }
+  .skincard .nm { font-size:11px; margin-top:4px; font-weight:700; }
+  .skincard .ct { font-size:11px; opacity:.85; }
+  .lb { width:100%; max-width:340px; text-align:left; font-variant-numeric:tabular-nums; }
+  .lb .e { display:flex; justify-content:space-between; padding:6px 10px; border-radius:8px; }
+  .lb .e:nth-child(odd){ background:rgba(255,255,255,.05); }
+  .toggle { display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid rgba(255,255,255,.08); font-size:15px; }
+  .switch { width:52px; height:30px; border-radius:30px; background:rgba(255,255,255,.15); position:relative; cursor:pointer; transition:.15s; }
+  .switch.on { background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+  .switch i { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:.15s; }
+  .switch.on i { left:25px; }
+  #toast { position:absolute; left:50%; top:14%; transform:translateX(-50%) translateY(-20px); opacity:0; transition:.25s;
+    background:linear-gradient(180deg,var(--accent),var(--accent2)); color:#1a1206; font-weight:800; padding:10px 18px; border-radius:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,.5); pointer-events:none; z-index:30; font-size:14px; white-space:nowrap; }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #daily { font-size:12px; opacity:.85; margin-top:6px; padding:8px 12px; background:rgba(255,210,63,.12); border:1px solid rgba(255,210,63,.3); border-radius:10px; }
+  .scorecard { border-radius:14px; max-width:300px; width:80%; box-shadow:0 8px 30px rgba(0,0,0,.6); }
+  .credit { position:absolute; bottom:8px; left:0; right:0; text-align:center; font-size:10px; opacity:.4; letter-spacing:1px; }
+  .initials { display:flex; gap:10px; justify-content:center; margin:10px 0; }
+  .initials .c { width:54px; height:64px; border:2px solid var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-size:34px; font-weight:900; background:rgba(255,210,63,.1); }
+  .initials .c.sel { box-shadow:0 0 0 3px rgba(255,210,63,.5); }
+  .big { font-size:clamp(28px,7vw,48px); font-weight:900; }
+  .statgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:320px; margin:10px 0; }
+  .stat { background:rgba(255,255,255,.05); border-radius:10px; padding:10px; }
+  .stat .v { font-size:22px; font-weight:900; color:var(--accent); }
+  .stat .k { font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:1px; }
+  .scroll { overflow-y:auto; max-height:78%; width:100%; display:flex; flex-direction:column; align-items:center; -webkit-overflow-scrolling:touch; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="toast"></div>
+
+    <!-- MAIN MENU -->
+    <div id="menu" class="overlay show">
+      <div class="scroll">
+        <h1>FLAPPY RUSH</h1>
+        <div class="sub">Tap • Click • Space to fly</div>
+        <button id="btnPlay">▶ PLAY</button>
+        <div class="label">Mode</div>
+        <div class="seg" id="modeSeg">
+          <button data-mode="endless" class="active">Endless</button>
+          <button data-mode="level">Level</button>
+        </div>
+        <div class="label">Difficulty</div>
+        <div class="seg" id="diffSeg">
+          <button data-diff="easy">Easy</button>
+          <button data-diff="normal" class="active">Normal</button>
+          <button data-diff="insane">Insane</button>
+        </div>
+        <div class="coinbar">🪙 <span id="menuCoins">0</span></div>
+        <div class="row" style="margin-top:10px">
+          <button class="ghost" id="btnShop">🛍️ Shop</button>
+          <button class="ghost" id="btnLb">🏆 Scores</button>
+          <button class="ghost" id="btnAch">🎖️ Badges</button>
+          <button class="ghost" id="btnSettings">⚙️ Settings</button>
+        </div>
+        <div id="daily"></div>
+      </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="over" class="overlay">
+      <div class="scroll">
+        <div class="label">Game Over</div>
+        <div class="big" id="overScore">0</div>
+        <div class="sub" id="overBest">Best: 0</div>
+        <div class="statgrid">
+          <div class="stat"><div class="v" id="overCoins">0</div><div class="k">Coins</div></div>
+          <div class="stat"><div class="v" id="overCombo">0x</div><div class="k">Max Combo</div></div>
+        </div>
+        <img id="cardImg" class="scorecard" alt="score card"/>
+        <div class="row" style="margin-top:12px">
+          <button id="btnRetry">↻ Retry</button>
+        </div>
+        <div class="row">
+          <button class="ghost" id="btnShare">⬇️ Save Card</button>
+          <button class="ghost" id="btnMenu">☰ Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW HIGH SCORE -->
+    <div id="hs" class="overlay">
+      <div class="label">New High Score!</div>
+      <div class="big" id="hsScore">0</div>
+      <div class="sub">Enter your initials</div>
+      <div class="initials" id="initials"></div>
+      <div class="row">
+        <button class="ghost" id="hsDel">⌫</button>
+        <button id="hsOk">OK</button>
+      </div>
+    </div>
+
+    <!-- SHOP -->
+    <div id="shop" class="overlay">
+      <div class="scroll">
+        <h1 style="font-size:clamp(26px,7vw,44px)">SHOP</h1>
+        <div class="coinbar">🪙 <span id="shopCoins">0</span></div>
+        <div class="panel"><div class="skingrid" id="skinGrid"></div></div>
+        <button class="ghost" id="shopBack">← Back</button>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="lb" class="overlay">
+      <div class="scroll">
+        <h1 style="font-size:clamp(26px,7vw,44px)">TOP 10</h1>
+        <div class="lb panel" id="lbList"></div>
+        <button class="ghost" id="lbBack">← Back</button>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS -->
+    <div id="ach" class="overlay">
+      <div class="scroll">
+        <h1 style="font-size:clamp(26px,7vw,44px)">BADGES</h1>
+        <div class="panel" id="achList" style="text-align:left"></div>
+        <button class="ghost" id="achBack">← Back</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings" class="overlay">
+      <div class="scroll">
+        <h1 style="font-size:clamp(26px,7vw,44px)">SETTINGS</h1>
+        <div class="panel" style="max-width:300px">
+          <div class="toggle">Music <div class="switch" data-s="music"><i></i></div></div>
+          <div class="toggle">Sound FX <div class="switch" data-s="sfx"><i></i></div></div>
+          <div class="toggle">Double Jump <div class="switch" data-s="doubleJump"><i></i></div></div>
+        </div>
+        <button class="ghost" id="resetData" style="color:#ff6b6b">🗑️ Reset All Data</button>
+        <button class="ghost" id="setBack">← Back</button>
+      </div>
+    </div>
+
+    <div class="credit">SANTOS AUTOMATION • FLAPPY RUSH v1.0</div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
