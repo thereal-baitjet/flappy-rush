@@ -862,19 +862,28 @@ function downloadCard() {
   const a = document.createElement('a'); a.href = cardURL; a.download = 'flappy-rush-'+G.score+'.png'; a.click();
 }
 
-/* ---- Post to Facebook ----
-   Opens Facebook's post composer in a centered popup (the game tab stays put).
-   The game link rides along as the post's link preview; the player adds their caption and hits Post. */
+/* ---- Share (native share sheet — pick Facebook to post immediately) ----
+   On phones this opens the OS share sheet with the actual score card image and a
+   caption containing the game link, so you can post straight to Facebook.
+   Falls back to the Facebook share dialog where native share isn't available. */
 const GAME_URL = 'https://flappy-rush.vercel.app/';
-$('btnFb').onclick = () => {
-  const msg = `I scored ${G.score} on Flappy Rush! 🐤 Play here:`;
+$('btnFb').onclick = async () => {
+  const msg = `I scored ${G.score} on Flappy Rush! 🐤 Play here: ${GAME_URL}`;
+  try {
+    if (navigator.canShare && cardURL) {
+      const blob = await (await fetch(cardURL)).blob();
+      const file = new File([blob], 'flappy-rush-'+G.score+'.png', { type:'image/png' });
+      if (navigator.canShare({ files:[file] })) {
+        await navigator.share({ files:[file], title:'Flappy Rush', text: msg });
+        return;
+      }
+    }
+    if (navigator.share) { await navigator.share({ title:'Flappy Rush', text: msg, url: GAME_URL }); return; }
+  } catch (e) { /* cancelled or unsupported — fall through */ }
+  // desktop fallback: Facebook share dialog
   const url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(GAME_URL)
             + '&quote=' + encodeURIComponent(msg);
-  const w = 640, h = 480;
-  const left = Math.max(0, ((screen.width  || 1200) - w) / 2);
-  const top  = Math.max(0, ((screen.height || 800)  - h) / 2);
-  window.open(url, 'fbshare',
-    `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,scrollbars=yes`);
+  window.open(url, 'fbshare', 'width=640,height=480,menubar=no,toolbar=no');
 };
 
 /* ---- High-score initials entry (arcade style) ---- */
