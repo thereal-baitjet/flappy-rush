@@ -859,25 +859,13 @@ function downloadCard() {
   const a = document.createElement('a'); a.href = cardURL; a.download = 'flappy-rush-'+G.score+'.png'; a.click();
 }
 
-/* ---- Share to Facebook ---- */
+/* ---- Share to Facebook (Facebook only — no native multi-app share sheet) ---- */
 const GAME_URL = 'https://flappy-rush.vercel.app/';
-$('btnFb').onclick = async () => {
+$('btnFb').onclick = () => {
   const msg = `I scored ${G.score} on Flappy Rush! 🐤 Can you beat me?`;
-  // Best path on phones: share the actual score-card image straight into the Facebook app
-  try {
-    if (navigator.canShare && cardURL) {
-      const blob = await (await fetch(cardURL)).blob();
-      const file = new File([blob], 'flappy-rush-'+G.score+'.png', { type:'image/png' });
-      if (navigator.canShare({ files:[file] })) {
-        await navigator.share({ files:[file], title:'Flappy Rush', text: msg });
-        return;
-      }
-    }
-  } catch (e) { /* user cancelled or unsupported — fall through to web sharer */ }
-  // Fallback (desktop): open the Facebook share dialog for the game link
   const url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(GAME_URL)
             + '&quote=' + encodeURIComponent(msg);
-  window.open(url, 'fbshare', 'width=620,height=520,menubar=no,toolbar=no');
+  window.open(url, 'fbshare', 'noopener,width=620,height=520,menubar=no,toolbar=no');
 };
 
 /* ---- High-score initials entry (arcade style) ---- */
