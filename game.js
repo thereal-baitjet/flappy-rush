@@ -157,7 +157,7 @@ const G = {
   usedPowerup:false,
   shake_x:0, shake_y:0,
   zoom:1, zoomTarget:1,
-  deathTimer:0,
+  deathTimer:0, invuln:0,
   ghostRec:[], ghostFrame:0, ghostY:null,
   cfg:null
 };
@@ -181,7 +181,7 @@ function startRun() {
   G.score = 0; G.runCoins = 0; G.combo = 0; G.comboTimer = 0; G.maxCombo = 0; G.mult = 1;
   G.scroll = cfg.scroll; G.distance = 0; G.spawnX = W + 40;
   G.shake = 0; G.timescale = 1; G.gravSign = 1; G.buffs = {}; G.usedPowerup = false;
-  G.zoom = 1; G.zoomTarget = 1; G.deathTimer = 0;
+  G.zoom = 1; G.zoomTarget = 1; G.deathTimer = 0; G.invuln = 0;
   G.ghostRec = []; G.ghostFrame = 0; G.ghostY = (State.ghost && State.ghost.length) ? State.ghost : null;
   gravity = 0.5; flapImpulse = -8.5;
   hideAllOverlays();
@@ -282,6 +282,7 @@ function updatePlaying(dt) {
 
   // physics
   b.dashCd = Math.max(0, b.dashCd - dt);
+  if (G.invuln > 0) G.invuln -= dt;
   b.vy += gravity * G.gravSign * ts;
   b.vy = clamp(b.vy, -maxFall, maxFall);
   b.y += b.vy * ts;
@@ -295,7 +296,10 @@ function updatePlaying(dt) {
   G.ghostRec.push(Math.round(b.y));
 
   // ground / ceiling
-  if (b.y + rad > H - 90) { b.y = H - 90 - rad; return die(); }
+  if (b.y + rad > H - 90) {
+    if (G.invuln > 0) { b.y = H - 90 - rad; b.vy = flapImpulse; }   // bounce while shielded
+    else { b.y = H - 90 - rad; return die(); }
+  }
   if (b.y - rad < 0) { b.y = rad; b.vy = 0; }
 
   // spawn pipes at a fixed horizontal spacing (so there's always a clear,
@@ -320,9 +324,14 @@ function updatePlaying(dt) {
     const topH = p.gapY - half, botY = p.gapY + half;
     if (aabb(b.x-rad, b.y-rad, rad*2, rad*2, p.x, 0, p.w, topH) ||
         aabb(b.x-rad, b.y-rad, rad*2, rad*2, p.x, botY, p.w, H-90-botY)) {
-      if (G.buffs.shield) { delete G.buffs.shield; burst(b.x,b.y,'#9fdcff',16); G.shake=8; Audio.sfx.power();
-        // nudge past pipe so we don't instantly re-collide
-        b.y = clamp(b.y, topH+rad+2, botY-rad-2);
+      if (G.invuln > 0) {
+        // already shielded this hit — pass through harmlessly
+      } else if (G.buffs.shield) {
+        delete G.buffs.shield;
+        G.invuln = 1.2;                                  // i-frames: absorb the whole hit, not one frame
+        b.y = clamp(b.y, topH + rad + 2, botY - rad - 2); // recenter into the gap
+        b.vy = flapImpulse * 0.5 * G.gravSign;            // gentle lift so you regain control
+        burst(b.x, b.y, '#9fdcff', 16); G.shake = 8; Audio.sfx.power(); toast('🛡️ Shield saved you!');
       } else return die();
     }
   }
@@ -609,10 +618,13 @@ function drawBird(x, y, rot, ghost) {
   const sk = skinById(State.equipped);
   const scale = G.buffs.tiny ? 0.6 : 1;
   ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.scale(scale * (G.gravSign<0?1:1), scale * G.gravSign);
-  // shield bubble
-  if (G.buffs.shield && !ghost) {
+  // shield bubble (solid while held, flashing during the absorb i-frames)
+  if (!ghost && (G.buffs.shield || G.invuln > 0)) {
+    const flashing = !G.buffs.shield && G.invuln > 0;
+    ctx.globalAlpha = flashing ? (0.4 + 0.4*Math.abs(Math.sin(Date.now()/90))) : 1;
     ctx.strokeStyle = 'rgba(120,200,255,.9)'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.arc(0,0,22,0,7); ctx.stroke();
+    ctx.globalAlpha = 1;
   }
   // body
   ctx.fillStyle = sk.body; ctx.beginPath(); ctx.ellipse(0,0,16,13,0,0,7); ctx.fill();
